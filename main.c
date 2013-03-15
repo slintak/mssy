@@ -1,20 +1,11 @@
 #include "hardware.h"
+#include "uart.h"
 
 #include <stdint.h>
 #include <stdlib.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
-
-/* UART baudrate */
-//#define BAUDRATE	115200
-#define BAUDRATE	57600
-//#define BAUDRATE	38400
-//#define BAUDRATE	19200
-//#define BAUDRATE	9600
-
-/* Compute baudrate from MCU frequency */
-#define UBAUD(b)	(F_CPU/16/(b)-1)
 
 /* Timer's OCR constant */
 #define TIMER_FREQ	(1)	// 1Hz
@@ -55,85 +46,6 @@ ISR(TIMER1_COMPA_vect) {
 	//LED_TOGGLE(LEDR);
 }
 
-/**
- * UART initialization to 'ubrr' baudrate.
- */
-void uart_init(uint16_t ubrr) {
-	/* Set baudrate. */
-	UBRR = UBAUD(ubrr);
-	/* Disable double speed. */
-	UCSRA &= ~(_BV(U2X));
-	/* Enable receiver and transmitter. */
-	UCSRB = _BV(RXEN)|_BV(TXEN);
-	/* Format: async, no parity, stop bit, 8 bits. */
-	UCSRC = _BV(UCSZ01)|_BV(UCSZ00);
-}
-
-/**
- * Send one char via UART.
- */
-void uart_putc(char data) {
-	/* Wait until buffer is empty. */
-	while(!( UCSRA & _BV(UDRE)));
-	/* Send data to buffer. */
-	UDR = data;
-}
-
-/**
- * Send string via UART.
- */
-void uart_puts(const char *str) {
-	uint8_t i = 0;
-	while(str[i] != '\0')
-		uart_putc(str[i++]);
-}
-
-/**
- * Is there new character in UART buffer?
- */
-char uart_available(void) {
-	return (UCSRA & _BV(RXC));
-}
-
-/**
- * Get one char from UART.
- */
-char uart_getc(void) {
-	/* Wait for data. */
-	while(!(UCSRA & _BV(RXC)));
-	return UDR;
-}
-
-#define UART_BUF_LEN	(20)
-static char uart_rx_buf[UART_BUF_LEN];
-static uint8_t uart_rx_count = 0;
-
-/**
- * Receive string from UART.
- * String has to be ended by '\n'
- * and cannot be longer than
- * UART_BUF_LEN.
- */
-char *uart_gets(uint8_t timeout) {
-	uart_rx_count = 0;
-	timer_seconds = 0;
-
-	char ch;
-	while(1) {
-	  if(uart_available()) {
-	    ch = uart_getc();
-	    if(ch == '\n') break;
-	    uart_rx_buf[uart_rx_count++] = ch;
-
-	  }
-
-	  if(timer_seconds >= timeout)
-	  	return NULL;
-	}
-
-	uart_rx_buf[uart_rx_count] = '\0';
-	return uart_rx_buf;
-}
 
 /**
  * Initialization of ADC.

@@ -22,7 +22,7 @@ endif
 FLAGS = -g -std=c99 --pedantic -Wextra -Wall -Os -mmcu=$(MCU) -DF_CPU=$(F_CPU) -I. -D$(BOARD)
 
 OUT = main
-OBJS = main.o
+OBJS = main.o uart.o
 
 prog: $(OUT).hex
 	$(RST)
