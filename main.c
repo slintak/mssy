@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
@@ -100,11 +101,15 @@ int main(void) {
 	/* Wait 10s for user input from UART. */
 	/* User has to set threshold. */
 	uart_puts("Set threshold, please [0-1023]: ");
-	
-	char *tmp = uart_gets(10);
+	timer_seconds = 0;
 	char str[20];
-	if(tmp != NULL){
-		uint16_t threshold = atoi(tmp);
+	while(timer_seconds != 10) {
+		if(uart_gets(str))
+			break;
+	}
+
+	if(strlen(str)) {
+		uint16_t threshold = atoi(str);
 		itoa(threshold, str, 10);
 		uart_puts("Threshold was set to ");
 		uart_puts(str);

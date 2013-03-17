@@ -19,7 +19,7 @@ else
 	RST = stty -f $(PORT) hupcl
 endif
 
-FLAGS = -g -std=c99 --pedantic -Wextra -Wall -Os -mmcu=$(MCU) -DF_CPU=$(F_CPU) -I. -D$(BOARD)
+FLAGS = -g -std=c99 -Werror --pedantic -Wextra -Wall -Os -mmcu=$(MCU) -DF_CPU=$(F_CPU) -I. -D$(BOARD)
 
 OUT = main
 OBJS = main.o uart.o

@@ -83,10 +83,6 @@ char uart_getc(void);
  * String has to be ended by '\n'
  * and cannot be longer than
  * UART_BUF_LEN.
- *
- * If message is not received in
- * 'timeout' seconds, NULL is
- * returned.
  */
 uint8_t uart_gets(char *str);
 

@@ -3,16 +3,7 @@
 static char uart_rx_buf[UART_BUF_LEN];
 static volatile uint8_t uart_rx_read = 0;
 static volatile uint8_t uart_rx_write = 0;
-
-/* UART baudrate */
-//#define BAUDRATE	115200
-#define BAUDRATE	57600
-//#define BAUDRATE	38400
-//#define BAUDRATE	19200
-//#define BAUDRATE	9600
-
-/* Compute baudrate from MCU frequency */
-#define UBAUD(b)	(F_CPU/16/(b)-1)
+static volatile uint8_t uart_rx_ready = 0;
 
 /**
  * UART initialization to 'ubrr' baudrate.
@@ -32,11 +23,13 @@ ISR(UART_RINT) {
 	uint8_t data = UDR;
 	if(data == '\n') {
 	  uart_rx_buf[uart_rx_write] = '\0';
+	  uart_rx_ready = 1;
 	} else {
 	  uart_rx_buf[uart_rx_write] = data;
+	  uart_rx_ready = 0;
 	}
 
-	uart_rx_write = uart_rx_write++ & (UART_BUF_LEN-1);
+	uart_rx_write = (uart_rx_write+1) & (UART_BUF_LEN-1);
 }
 
 /**
@@ -69,9 +62,9 @@ char uart_available(void) {
  * Get one char from UART.
  */
 char uart_getc(void) {
-	while(uart_rx_read >= uart_rx_write);
+	while(uart_rx_read == uart_rx_write);
 	char tmp = uart_rx_buf[uart_rx_read];
-	uart_rx_read = uart_rx_read++ & (UART_BUF_LEN-1);
+	uart_rx_read = (uart_rx_read+1) & (UART_BUF_LEN-1);
 	return tmp;
 }
 
@@ -81,16 +74,20 @@ char uart_getc(void) {
  * and cannot be longer than
  * UART_BUF_LEN.
  *
- * If message is not received in
- * 'timeout' seconds, NULL is
- * returned.
+ * Returns number of read chars.
  */
 uint8_t uart_gets(char *str) {
+	if(uart_rx_ready == 0) {
+		str[0] = '\0';
+		return 0;
+	}
+
 	uint8_t i = 0, j = 0;
-	for(i = uart_rx_read; i == uart_rx_write; (i++)&(UART_BUF_LEM-1)) {
+	for(i = uart_rx_read; i != uart_rx_write; i=(i+1)&(UART_BUF_LEN-1)) {
 		str[j++] = uart_rx_buf[i];
 	}
 
-	uart_rx_read = (uart_rx_read+i) & (UART_BUF_LEN-1);
+	uart_rx_read = uart_rx_write;//(uart_rx_read+j) & (UART_BUF_LEN-1);
+	str[j] = '\0';
 	return j;
 }
